@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>锻炼编程能力的小游戏</title>
+        <style media="screen">
+            canvas {
+                border: 1px black solid;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas" width="600" height="400"></canvas>
+        <script>
+
+var log = console.log.bind()
+
+var Collide = function ( ball, paddle) {
+
+}
+var imageFromPath = function (path) {
+    var img = new Image()
+    img.src = path
+    return img
+}
+var Paddle = function () {
+    var paddle = imageFromPath('img/paddle.png')
+    var image = {
+        image: paddle,
+        x: 100,
+        y: 250,
+        speed: 5,
+    }
+    var o = image
+    o.moveRight = function () {
+        o.x += o.speed
+    }
+    o.moveLeft = function () {
+        o.x -= o.speed
+    }
+    o.moveUp = function () {
+        o.y -= o.speed
+    }
+    o.moveDown = function () {
+        o.y += o.speed
+    }
+
+    var aInb = function ( x1, x2, x3) {
+        return (x1 >= x2 && x1 <= x3)
+    }
+    o.collideY = function (b) {
+        var a = o
+        if( aInb( a.x, b.x, b.x + b.image.width ) || aInb( b.x, a.x, a.x + a.image.width ) ){
+            if( aInb( b.y, a.y, a.y + a.image.height) || ( aInb( a.y, b.y, b.y + b.image.height))){
+                    return true
+            }
+
+        }
+        return false
+    }
+    o.collideX = function (b) {
+        var a = o
+        if( aInb( b.y, a.y, a.y + a.image.height) || ( aInb( a.y, b.y, b.y + b.image.height)) ){
+            if(aInb( a.x, b.x, b.x + b.image.width ) || aInb( b.x, a.x, a.x + a.image.width ) ){
+                    return true
+            }
+        }
+        return false
+    }
+    // o.collideX = function ( ball, paddle ) {
+    //     var j =false
+    //     if( ( ball.y <= paddle.y && ball.y + ball.image.height >= paddle.y ) || ( ball.y <= paddle.x + paddle.image.height && ball.y + ball.image.height >= paddle.y + paddle.image.height)){
+    //         // if( ball.x <= paddle.x && ball.x + ball.image.width >= paddle.x){
+    //         //     j = true
+    //         // }
+    //         // if( ball.y <= paddle.y + paddle.image.height && ball.y >= paddle.y + ball.image.height ){
+    //         //     j = true
+    //         // }
+    //         j = true
+    //     }
+    //     return j
+    // }
+    return o
+}
+
+var Ball = function () {
+    var ball = imageFromPath('img/ball.png')
+    var image = {
+        image: ball,
+        x: 125,
+        y: 230,
+        speedX: 5,
+        speedY: 5,
+        fired: false
+    }
+    var o = image
+    o.fire = function () {
+        o.fired = true
+    }
+    o.ejection = function () {
+        if (o.fired){
+            if( o.x<0 || o.x>600-6 ){
+                o.speedX *= -1
+            }
+            if( o.y<0 || o.y>400-6 ){
+                o.speedY *= -1
+            }
+                o.x += o.speedX
+                o.y -= o.speedY
+        }
+    }
+    o.collideActionY = function () {
+        o.speedY *= -1
+    }
+    o.collideActionX = function () {
+        o.speedX *= -1
+    }
+    return o
+}
+
+//取得keydowns
+var GuaGame = function () {
+    var game = {
+        keydowns: [],
+        actions: [],
+    }
+    var canvas = document.querySelector('#canvas')
+    var ctx = canvas.getContext('2d')
+    game.ctx = ctx
+    game.drawImage = function (guaImage) {
+        game.ctx.drawImage(guaImage.image, guaImage.x, guaImage.y)
+    }
+    game.clearRect = function () {
+        game.ctx.clearRect(0, 0, 600, 400)
+    }
+    window.addEventListener('keydown', (event) => {
+        game.keydowns[event.key] = true
+    } )
+    window.addEventListener('keyup', function (event) {
+        game.keydowns[event.key] = false
+    })
+    //按下的按键会被储存在key Array里，而函数会储存在key()方法里
+    //所以放在actions Object
+    game.registerEvent = function (key, callback) {
+        game.actions[key] = callback
+    }
+    setInterval(function () {
+
+        var actions = Object.keys(game.actions)
+        for (var i = 0; i < actions.length; i++) {
+
+            key = actions[i]
+
+            if(game.keydowns[key]){
+                game.actions[key]()
+            }
+        }
+        game.clearRect()
+        game.update()
+        game.draw()
+
+    }, 1000/60)
+
+    //执行events
+    return game
+}
+
+var  _main = function () {
+    var g = GuaGame()
+    var paddle = Paddle()
+    var ball = Ball()
+    var c = Collide()
+
+    g.registerEvent('f', function () {
+        ball.fire()
+    })
+    g.registerEvent('a', function () {
+        paddle.moveLeft()
+    })
+    g.registerEvent('d', function () {
+        paddle.moveRight()
+    })
+    g.registerEvent('w', function () {
+        paddle.moveUp()
+    })
+    g.registerEvent('s', function () {
+        paddle.moveDown()
+    })
+    g.update = function () {
+        ball.ejection()
+        if( paddle.collideY(ball)){
+            ball.collideActionY()
+        } else if(paddle.collideX(ball)){
+            ball.collideActionX()
+        }
+        log(paddle.collideY(ball))
+        log( paddle.collideX(ball)
+        )
+        // if(ball.collideY( ball, paddle )){
+        //     ball.speedY *= -1
+        // }
+        // else if(ball.collideX( ball, paddle )){
+        //     ball.speedX *= -1
+        // }
+    }
+    g.draw = function () {
+        g.drawImage(paddle)
+        g.drawImage(ball)
+    }
+    }
+_main()
+
+
+
+        </script>
+    </body>
+</html>
